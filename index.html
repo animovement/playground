@@ -409,6 +409,106 @@
       border-left: 2px solid var(--accent);
     }
 
+    /* Tab navigation for right pane */
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .tab-btn.active {
+      color: var(--accent);
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .tab-content {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Session pane (Variables + Plots) */
+    .session-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .session-section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .session-section-header {
+      flex-shrink: 0;
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-secondary);
+    }
+
+    .session-section-title {
+      font-size: 0.6rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    /* Variables section */
+    .variables-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      min-height: 0;
+    }
+
+    .variables-empty {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-style: italic;
+    }
+
     /* Help pane */
     .help-wrapper {
       flex: 1;
@@ -502,7 +602,7 @@
       gap: 0.75rem;
       padding: 0.5rem;
       border-top: 1px solid var(--border);
-      background: var(--bg-tertiary);
+      background: var(--bg-secondary);
     }
 
     .plot-nav-btn {
@@ -595,7 +695,8 @@
           <div class="panel-header">
             <span class="panel-title">Script</span>
             <div class="panel-actions">
-              <button class="panel-btn primary" id="runBtn" disabled>Run</button>
+              <button class="panel-btn" id="runLineBtn" disabled title="Run current expression (Cmd/Ctrl+Enter)">Run line</button>
+              <button class="panel-btn primary" id="runScriptBtn" disabled title="Run entire script">Run script</button>
             </div>
           </div>
           <div class="editor-wrapper">
@@ -635,44 +736,66 @@
       <!-- Horizontal resize handle -->
       <div class="resize-handle-h" id="resizeH"></div>
 
-      <!-- Right pane with Help and Plots -->
+      <!-- Right pane with tabs -->
       <div class="right-pane" id="rightPane" style="flex: 1 1 40%;">
-        <!-- Help Panel -->
-        <div class="panel" id="helpPanel" style="flex: 1 1 50%;">
-          <div class="panel-header">
-            <span class="panel-title">Help</span>
-            <div class="panel-actions">
-              <span class="panel-hint" id="helpTopic"></span>
-              <button class="panel-btn" id="clearHelpBtn">Clear</button>
-            </div>
+        <div class="panel" style="flex: 1; display: flex; flex-direction: column;">
+          <!-- Tab navigation -->
+          <div class="tab-nav">
+            <button class="tab-btn active" id="tabSession" data-tab="session">Session</button>
+            <button class="tab-btn" id="tabHelp" data-tab="help">Help</button>
           </div>
-          <div class="help-wrapper" id="helpContent">
-            <span class="help-empty">Run ?topic or help(topic) to view documentation</span>
-          </div>
-        </div>
 
-        <!-- Vertical resize handle for right pane -->
-        <div class="resize-handle-v" id="resizeVRight"></div>
+          <!-- Session tab content -->
+          <div class="tab-content active" id="sessionContent">
+            <div class="session-pane">
+              <!-- Variables section -->
+              <div class="session-section" id="variablesSection" style="flex: 1 1 40%;">
+                <div class="session-section-header">
+                  <span class="session-section-title">Variables</span>
+                </div>
+                <div class="variables-wrapper" id="variablesContent">
+                  <span class="variables-empty">No variables in environment</span>
+                </div>
+              </div>
 
-        <!-- Plots Panel -->
-        <div class="panel" id="plotsPanel" style="flex: 1 1 50%;">
-          <div class="panel-header">
-            <span class="panel-title">Plots</span>
-            <div class="panel-actions">
-              <button class="panel-btn" id="clearPlotsBtn">Clear</button>
-            </div>
-          </div>
-          <div class="plots-wrapper">
-            <div class="plot-carousel" id="plotCarousel">
-              <span class="plots-empty" id="plotsEmpty">Plots will appear here</span>
-              <div class="plot-container" id="plotContainer" style="display: none;">
-                <img id="plotImage" src="" alt="Plot">
+              <!-- Vertical resize handle for session pane -->
+              <div class="resize-handle-v" id="resizeVSession"></div>
+
+              <!-- Plots section -->
+              <div class="session-section" id="plotsSection" style="flex: 1 1 60%;">
+                <div class="session-section-header">
+                  <span class="session-section-title">Plots</span>
+                  <div class="panel-actions">
+                    <button class="panel-btn" id="clearPlotsBtn">Clear</button>
+                  </div>
+                </div>
+                <div class="plots-wrapper">
+                  <div class="plot-carousel" id="plotCarousel">
+                    <span class="plots-empty" id="plotsEmpty">Plots will appear here</span>
+                    <div class="plot-container" id="plotContainer" style="display: none;">
+                      <img id="plotImage" src="" alt="Plot">
+                    </div>
+                  </div>
+                  <div class="plot-nav" id="plotNav" style="display: none;">
+                    <button class="plot-nav-btn" id="plotPrev" disabled>&larr;</button>
+                    <span class="plot-counter" id="plotCounter">1 / 1</span>
+                    <button class="plot-nav-btn" id="plotNext" disabled>&rarr;</button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="plot-nav" id="plotNav" style="display: none;">
-              <button class="plot-nav-btn" id="plotPrev" disabled>&larr;</button>
-              <span class="plot-counter" id="plotCounter">1 / 1</span>
-              <button class="plot-nav-btn" id="plotNext" disabled>&rarr;</button>
+          </div>
+
+          <!-- Help tab content -->
+          <div class="tab-content" id="helpContent">
+            <div class="panel-header" style="border-top: none;">
+              <span class="panel-hint" id="helpTopic"></span>
+              <div class="panel-actions">
+                <button class="panel-btn" id="clearHelpBtn">Clear</button>
+              </div>
+            </div>
+            <div class="help-wrapper" id="helpWrapper">
+              <span class="help-empty">Run ?topic or help(topic) to view documentation</span>
             </div>
           </div>
         </div>
@@ -698,6 +821,7 @@ let commandHistory = [];
 let historyIndex = -1;
 let plotImages = [];
 let currentPlotIndex = 0;
+let activeTab = 'session';
 
 // ===== DOM Ready Check =====
 
@@ -707,23 +831,224 @@ function getElement(id) {
   return el;
 }
 
+// ===== ANSI Styling =====
+function ansiToHtml(str) {
+  const ansiColors = {
+    '30': '#000000', '31': '#cd6155', '32': '#8fbc8f', '33': '#f0c674',
+    '34': '#7eb8da', '35': '#c586c0', '36': '#4ec9b0', '37': '#e8e6e3',
+    '38;5;33': '#7eb8da', '38;5;198': '#c586c0',
+    '39': null, // default foreground
+    '1': 'bold', '22': 'unbold'
+  };
+  
+  let result = '';
+  let currentStyles = { color: null, bold: false };
+  let i = 0;
+  
+  while (i < str.length) {
+    if (str[i] === '\x1B' && str[i + 1] === '[') {
+      const endIdx = str.indexOf('m', i);
+      if (endIdx !== -1) {
+        const code = str.slice(i + 2, endIdx);
+        
+        if (code === '1') {
+          currentStyles.bold = true;
+        } else if (code === '22') {
+          currentStyles.bold = false;
+        } else if (code === '39' || code === '0') {
+          currentStyles.color = null;
+          currentStyles.bold = false;
+        } else if (ansiColors[code]) {
+          currentStyles.color = ansiColors[code];
+        }
+        
+        i = endIdx + 1;
+        continue;
+      }
+    }
+    
+    // Find next escape or end of string
+    let nextEscape = str.indexOf('\x1B', i);
+    if (nextEscape === -1) nextEscape = str.length;
+    
+    const text = str.slice(i, nextEscape);
+    if (text) {
+      const styles = [];
+      if (currentStyles.color) styles.push(`color:${currentStyles.color}`);
+      if (currentStyles.bold) styles.push('font-weight:600');
+      
+      if (styles.length > 0) {
+        result += `<span style="${styles.join(';')}">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+      } else {
+        result += text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+    }
+    
+    i = nextEscape;
+  }
+  
+  return result;
+}
+
 // ===== Editor Setup =====
+
+function isLineContinuation(line) {
+  const trimmed = line.trimEnd();
+  // Line continues if it ends with: pipe, +, comma, opening bracket, or operator
+  return /(\|>|%>%|\+|,|\{|\(|\[|&&|\|\||&|\\)$/.test(trimmed);
+}
+
+function startsWithContinuation(line) {
+  // Line is a continuation if it starts with pipe or +
+  return /^\s*(\|>|%>%|\+)/.test(line);
+}
+
+function startsWithClosingBracket(line) {
+  return /^\s*[\)\]\}]/.test(line);
+}
+
+function countBrackets(text) {
+  let parens = 0, brackets = 0, braces = 0;
+  let inString = false;
+  let stringChar = '';
+  
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const prev = i > 0 ? text[i - 1] : '';
+    
+    if (inString) {
+      if (ch === stringChar && prev !== '\\') inString = false;
+      continue;
+    }
+    
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      stringChar = ch;
+    } else if (ch === '(') parens++;
+    else if (ch === ')') parens--;
+    else if (ch === '[') brackets++;
+    else if (ch === ']') brackets--;
+    else if (ch === '{') braces++;
+    else if (ch === '}') braces--;
+  }
+  
+  return { parens, brackets, braces, inString };
+}
+
+function getExpressionStart(cm, fromLine) {
+  let exprStart = fromLine;
+  
+  for (let i = fromLine; i > 0; i--) {
+    const currentLine = cm.getLine(i);
+    const checkPrevLine = cm.getLine(i - 1);
+    
+    if (startsWithContinuation(currentLine) || 
+        startsWithClosingBracket(currentLine) ||
+        isLineContinuation(checkPrevLine)) {
+      exprStart = i - 1;
+      continue;
+    }
+    
+    // Check bracket balance of previous line
+    const prevCounts = countBrackets(checkPrevLine);
+    if (prevCounts.parens > 0 || prevCounts.brackets > 0 || prevCounts.braces > 0) {
+      exprStart = i - 1;
+      continue;
+    }
+    
+    break;
+  }
+  
+  return exprStart;
+}
+
+function getConnectedLines(cm, startLine) {
+  const totalLines = cm.lineCount();
+  
+  // Search backwards for the start of this expression
+  let firstLine = getExpressionStart(cm, startLine);
+  
+  // Now check bracket balance from firstLine to find the true end
+  let lastLine = firstLine;
+  let cumulativeCode = '';
+  
+  for (let i = firstLine; i < totalLines; i++) {
+    const line = cm.getLine(i);
+    cumulativeCode += (i > firstLine ? '\n' : '') + line;
+    
+    const counts = countBrackets(cumulativeCode);
+    const bracketsBalanced = counts.parens === 0 && counts.brackets === 0 && 
+                              counts.braces === 0 && !counts.inString;
+    
+    lastLine = i;
+    
+    // If brackets are balanced, check if line continues with pipe/+ or next line starts with continuation
+    if (bracketsBalanced) {
+      if (isLineContinuation(line)) {
+        // Line ends with pipe/+, continue
+        continue;
+      }
+      
+      // Check if next line starts with continuation
+      if (i + 1 < totalLines && startsWithContinuation(cm.getLine(i + 1))) {
+        continue;
+      }
+      
+      // We're done
+      break;
+    }
+  }
+  
+  // Collect the lines
+  const lines = [];
+  for (let i = firstLine; i <= lastLine; i++) {
+    lines.push(cm.getLine(i));
+  }
+  
+  return {
+    code: lines.join('\n'),
+    firstLine,
+    lastLine
+  };
+}
 
 function rAutoIndent(cm) {
   const cursor = cm.getCursor();
   const line = cursor.line;
-  const prevLine = line > 0 ? cm.getLine(line - 1) : '';
+  
+  if (line === 0) return '';
+  
+  const prevLine = cm.getLine(line - 1);
   const prevIndent = prevLine.match(/^\s*/)[0];
-  const trimmedPrev = prevLine.trimEnd();
   
-  const shouldIndent = /(\|>|%>%|\+|\{|\(|\[|,)$/.test(trimmedPrev);
+  // Find expression start
+  const exprStart = getExpressionStart(cm, line - 1);
   
-  let newIndent = prevIndent;
-  if (shouldIndent) {
-    newIndent = prevIndent + '  ';
+  // Calculate bracket balance up to end of previous line
+  let cumulativeCode = '';
+  for (let i = exprStart; i < line; i++) {
+    cumulativeCode += (i > exprStart ? '\n' : '') + cm.getLine(i);
   }
   
-  return newIndent;
+  const counts = countBrackets(cumulativeCode);
+  const openBracketCount = counts.parens + counts.brackets + counts.braces;
+  
+  // Get the base indent (indent of the first line of expression)
+  const baseIndent = cm.getLine(exprStart).match(/^\s*/)[0];
+  
+  // If we have open brackets, indent one level from base
+  if (openBracketCount > 0) {
+    return baseIndent + '  ';
+  }
+  
+  // If previous line ends with pipe/+ but brackets are balanced,
+  // indent one level from base (not cumulative)
+  if (isLineContinuation(prevLine)) {
+    return baseIndent + '  ';
+  }
+  
+  // Expression is complete, return to base indent
+  return baseIndent;
 }
 
 function initEditor(initialCode) {
@@ -754,8 +1079,37 @@ function initEditor(initialCode) {
         }
       },
       'Enter': (cm) => {
-        const indent = rAutoIndent(cm);
-        cm.replaceSelection('\n' + indent);
+        const cursor = cm.getCursor();
+        const line = cm.getLine(cursor.line);
+
+        // If current line is blank, just add a newline with same (no) indent
+        if (line.trim() === '') {
+          cm.replaceSelection('\n');
+          return;
+        }
+
+        const beforeCursor = line.slice(0, cursor.ch);
+        const afterCursor = line.slice(cursor.ch);
+        
+        // Check if we're between opening and closing brackets
+        const lastCharBefore = beforeCursor.trimEnd().slice(-1);
+        const firstCharAfter = afterCursor.trimStart()[0];
+        const betweenBrackets = 
+          (lastCharBefore === '(' && firstCharAfter === ')') ||
+          (lastCharBefore === '[' && firstCharAfter === ']') ||
+          (lastCharBefore === '{' && firstCharAfter === '}');
+        
+        if (betweenBrackets) {
+          // Insert newline with indent, then another newline with base indent for closing bracket
+          const baseIndent = line.match(/^\s*/)[0];
+          const newIndent = baseIndent + '  ';
+          cm.replaceSelection('\n' + newIndent + '\n' + baseIndent);
+          // Move cursor to the indented line
+          cm.setCursor(cursor.line + 1, newIndent.length);
+        } else {
+          const indent = rAutoIndent(cm);
+          cm.replaceSelection('\n' + indent);
+        }
       }
     }
   });
@@ -824,17 +1178,31 @@ function runFromEditor() {
   let code;
   
   if (selection) {
+    // Run selected text
     code = selection;
   } else {
+    // Get connected lines around cursor
     const cursor = editor.getCursor();
-    code = editor.getLine(cursor.line);
-    if (cursor.line < editor.lineCount() - 1) {
-      editor.setCursor(cursor.line + 1, 0);
+    const connected = getConnectedLines(editor, cursor.line);
+    code = connected.code;
+    
+    // Move cursor to line after the expression
+    if (connected.lastLine < editor.lineCount() - 1) {
+      editor.setCursor(connected.lastLine + 1, 0);
     }
   }
   
   if (code.trim()) {
     runCode(code.trim());
+  }
+}
+
+function runScript() {
+  if (!editor) return;
+  
+  const code = editor.getValue().trim();
+  if (code) {
+    runCode(code);
   }
 }
 
@@ -849,13 +1217,19 @@ function setStatus(state, text) {
 
 // ===== Console =====
 
-function appendConsole(text, type = 'stdout') {
+function appendConsole(text, type = 'stdout', isHtml = false) {
   const consoleOutput = getElement('consoleOutput');
   if (!consoleOutput) return;
   
   const line = document.createElement('div');
   line.className = 'console-line ' + type;
-  line.textContent = text;
+  
+  if (isHtml) {
+    line.innerHTML = text;
+  } else {
+    line.textContent = text;
+  }
+  
   consoleOutput.appendChild(line);
   consoleOutput.scrollTop = consoleOutput.scrollHeight;
 }
@@ -865,21 +1239,39 @@ function clearConsole() {
   if (consoleOutput) consoleOutput.innerHTML = '';
 }
 
+// ===== Tabs =====
+
+function switchTab(tabName) {
+  activeTab = tabName;
+  
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName);
+  });
+  
+  // Update tab content
+  const sessionContent = getElement('sessionContent');
+  const helpContent = getElement('helpContent');
+  
+  if (sessionContent) sessionContent.classList.toggle('active', tabName === 'session');
+  if (helpContent) helpContent.classList.toggle('active', tabName === 'help');
+}
+
 // ===== Help =====
 
 function clearHelp() {
-  const helpContent = getElement('helpContent');
+  const helpWrapper = getElement('helpWrapper');
   const helpTopic = getElement('helpTopic');
-  if (helpContent) helpContent.innerHTML = '<span class="help-empty">Run ?topic or help(topic) to view documentation</span>';
+  if (helpWrapper) helpWrapper.innerHTML = '<span class="help-empty">Run ?topic or help(topic) to view documentation</span>';
   if (helpTopic) helpTopic.textContent = '';
 }
 
 function displayHelp(topic, text) {
-  const helpContent = getElement('helpContent');
+  const helpWrapper = getElement('helpWrapper');
   const helpTopic = getElement('helpTopic');
   
   if (helpTopic) helpTopic.textContent = topic;
-  if (!helpContent) return;
+  if (!helpWrapper) return;
   
   // Basic formatting for R help text
   let formatted = String(text)
@@ -889,7 +1281,10 @@ function displayHelp(topic, text) {
     .replace(/^_([^_]+)_$/gm, '<div class="help-section">$1</div>')
     .replace(/^([A-Z][A-Za-z ]+):$/gm, '<div class="help-section">$1:</div>');
   
-  helpContent.innerHTML = `<div class="help-content">${formatted}</div>`;
+  helpWrapper.innerHTML = `<div class="help-content">${formatted}</div>`;
+  
+  // Switch to Help tab when help is displayed
+  switchTab('help');
 }
 
 function isHelpRequest(code) {
@@ -1014,16 +1409,42 @@ async function initWebR() {
       ))
     `);
 
-    appendConsole('Loading animovement...', 'system');
-    await webR.evalR('library(animovement)');
-
-    appendConsole('Ready! animovement is loaded.', 'system');
     appendConsole('', 'system');
+    
+// Run library(animovement) and show it in the console
+    appendConsole('> library(animovement)', 'command');
+    
+    const shelter = await new webR.Shelter();
+    try {
+      const result = await shelter.captureR('library(animovement)', {
+        withAutoprint: true,
+        captureStreams: true,
+        captureConditions: false
+      });
+      
+      // Display any output from loading the library
+      for (const out of result.output) {
+        if (typeof out.data !== 'string') continue;
+        const htmlData = ansiToHtml(out.data);
+        if (out.type === 'stdout' && out.data.trim()) {
+          appendConsole(htmlData, 'stdout', true);
+        } else if (out.type === 'stderr' && out.data.trim()) {
+          appendConsole(htmlData, 'stderr', true);
+        }
+      }
+    } finally {
+      await shelter.purge();
+    }
+
+    appendConsole('', 'system');
+    appendConsole('Ready!', 'system');
 
     setStatus('ready', 'Ready');
     
-    const runBtn = getElement('runBtn');
-    if (runBtn) runBtn.disabled = false;
+    const runLineBtn = getElement('runLineBtn');
+    const runScriptBtn = getElement('runScriptBtn');
+    if (runLineBtn) runLineBtn.disabled = false;
+    if (runScriptBtn) runScriptBtn.disabled = false;
     if (consoleInput) {
       consoleInput.setOption('readOnly', false);
       consoleInput.focus();
@@ -1048,8 +1469,10 @@ async function runCode(code) {
   }
 
   isRunning = true;
-  const runBtn = getElement('runBtn');
-  if (runBtn) runBtn.disabled = true;
+  const runLineBtn = getElement('runLineBtn');
+  const runScriptBtn = getElement('runScriptBtn');
+  if (runLineBtn) runLineBtn.disabled = true;
+  if (runScriptBtn) runScriptBtn.disabled = true;
   if (consoleInput) consoleInput.setOption('readOnly', true);
   setStatus('loading', 'Running...');
 
@@ -1097,7 +1520,8 @@ async function runCode(code) {
   }
 
   isRunning = false;
-  if (runBtn) runBtn.disabled = false;
+  if (runLineBtn) runLineBtn.disabled = false;
+  if (runScriptBtn) runScriptBtn.disabled = false;
   if (consoleInput) consoleInput.setOption('readOnly', false);
   setStatus('ready', 'Ready');
 }
@@ -1109,11 +1533,11 @@ function initResize() {
   const rightPane = getElement('rightPane');
   const editorPanel = getElement('editorPanel');
   const consolePanel = getElement('consolePanel');
-  const helpPanel = getElement('helpPanel');
-  const plotsPanel = getElement('plotsPanel');
+  const variablesSection = getElement('variablesSection');
+  const plotsSection = getElement('plotsSection');
   const resizeH = getElement('resizeH');
   const resizeV = getElement('resizeV');
-  const resizeVRight = getElement('resizeVRight');
+  const resizeVSession = getElement('resizeVSession');
 
   // Horizontal resize (left/right panes)
   if (resizeH && leftPane && rightPane) {
@@ -1185,30 +1609,30 @@ function initResize() {
     });
   }
 
-  // Vertical resize (help/plots)
-  if (resizeVRight && helpPanel && plotsPanel) {
-    resizeVRight.addEventListener('mousedown', (e) => {
+  // Vertical resize (variables/plots in session pane)
+  if (resizeVSession && variablesSection && plotsSection) {
+    resizeVSession.addEventListener('mousedown', (e) => {
       e.preventDefault();
       const startY = e.clientY;
-      const startHelpHeight = helpPanel.getBoundingClientRect().height;
-      const startPlotsHeight = plotsPanel.getBoundingClientRect().height;
+      const startVariablesHeight = variablesSection.getBoundingClientRect().height;
+      const startPlotsHeight = plotsSection.getBoundingClientRect().height;
       
       document.body.classList.add('resizing-v');
-      resizeVRight.classList.add('dragging');
+      resizeVSession.classList.add('dragging');
       
       const onMouseMove = (e) => {
         const delta = e.clientY - startY;
-        const totalHeight = startHelpHeight + startPlotsHeight;
-        const newHelpHeight = Math.max(80, Math.min(totalHeight - 80, startHelpHeight + delta));
-        const newPlotsHeight = totalHeight - newHelpHeight;
+        const totalHeight = startVariablesHeight + startPlotsHeight;
+        const newVariablesHeight = Math.max(60, Math.min(totalHeight - 80, startVariablesHeight + delta));
+        const newPlotsHeight = totalHeight - newVariablesHeight;
         
-        helpPanel.style.flex = `0 0 ${newHelpHeight}px`;
-        plotsPanel.style.flex = `0 0 ${newPlotsHeight}px`;
+        variablesSection.style.flex = `0 0 ${newVariablesHeight}px`;
+        plotsSection.style.flex = `0 0 ${newPlotsHeight}px`;
       };
       
       const onMouseUp = () => {
         document.body.classList.remove('resizing-v');
-        resizeVRight.classList.remove('dragging');
+        resizeVSession.classList.remove('dragging');
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
       };
@@ -1228,11 +1652,20 @@ function initEventListeners() {
   const clearPlotsBtn = getElement('clearPlotsBtn');
   const plotPrev = getElement('plotPrev');
   const plotNext = getElement('plotNext');
+  const tabSession = getElement('tabSession');
+  const tabHelp = getElement('tabHelp');
 
-  if (runBtn) runBtn.addEventListener('click', runFromEditor);
+  const runLineBtn = getElement('runLineBtn');
+  const runScriptBtn = getElement('runScriptBtn');
+  if (runLineBtn) runLineBtn.addEventListener('click', runFromEditor);
+  if (runScriptBtn) runScriptBtn.addEventListener('click', runScript);
   if (clearConsoleBtn) clearConsoleBtn.addEventListener('click', clearConsole);
   if (clearHelpBtn) clearHelpBtn.addEventListener('click', clearHelp);
   if (clearPlotsBtn) clearPlotsBtn.addEventListener('click', clearPlots);
+
+  // Tab switching
+  if (tabSession) tabSession.addEventListener('click', () => switchTab('session'));
+  if (tabHelp) tabHelp.addEventListener('click', () => switchTab('help'));
 
   // Plot navigation
   if (plotPrev) {
