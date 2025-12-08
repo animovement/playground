@@ -513,44 +513,65 @@
     .help-wrapper {
       flex: 1;
       overflow-y: auto;
-      padding: 0.75rem;
-      font-size: 0.75rem;
       min-height: 0;
+      background: var(--bg-secondary);
     }
 
-    .help-content {
+    .help-pre {
+      margin: 0;
+      padding: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
-      line-height: 1.5;
+      color: var(--text-primary);
     }
 
     .help-empty {
       color: var(--text-muted);
       font-style: italic;
+      padding: 0.75rem;
     }
 
-    .help-title {
+    .help-header-line {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .help-func-name {
       color: var(--accent);
       font-weight: 600;
-      font-size: 0.9rem;
-      margin-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.25rem;
     }
 
-    .help-section {
-      color: var(--text-secondary);
-      font-weight: 600;
-      margin-top: 0.75rem;
-      margin-bottom: 0.25rem;
+    .help-pkg-name {
+      color: var(--text-muted);
     }
 
-    .help-code {
+    .help-r-doc {
+      color: var(--text-muted);
+    }
+
+    .help-underline {
+      text-decoration: underline;
+      color: var(--text-primary);
+    }
+
+    .help-link {
+      color: var(--accent-dim);
+      text-decoration: none;
+    }
+
+    .help-link:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    .help-code-inline {
       background: var(--bg-tertiary);
-      padding: 0.5rem;
-      border-radius: 4px;
-      margin: 0.25rem 0;
-      overflow-x: auto;
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      font-size: 0.9em;
     }
 
     /* Plots carousel */
@@ -1268,49 +1289,133 @@ function clearHelp() {
 
 function displayHelp(topic, text) {
   const helpWrapper = getElement('helpWrapper');
-  const helpTopic = getElement('helpTopic');
-  
+  const helpTopic   = getElement('helpTopic');
   if (helpTopic) helpTopic.textContent = topic;
   if (!helpWrapper) return;
-  
-  // Basic formatting for R help text
-  let formatted = String(text)
+
+  let formatted = String(text);
+
+  // ANSI underline → <u>
+  formatted = formatted.replace(/\x1B\[4m([\s\S]*?)\x1B\[24m/g, '<u>$1</u>');
+  // Strip other ANSI codes
+  formatted = formatted.replace(/\x1B\[[0-9;]*m/g, '');
+  // Collapse "_x_" markup
+  formatted = formatted.replace(/_([A-Za-z0-9()])_/g, '$1');
+  // Escape HTML
+  formatted = formatted
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^_([^_]+)_$/gm, '<div class="help-section">$1</div>')
-    .replace(/^([A-Z][A-Za-z ]+):$/gm, '<div class="help-section">$1:</div>');
-  
-  helpWrapper.innerHTML = `<div class="help-content">${formatted}</div>`;
-  
-  // Switch to Help tab when help is displayed
+    .replace(/>/g, '&gt;');
+
+  // Wrap headings (e.g., "DESCRIPTION:", "USAGE")
+  const lines = formatted.split('\n');
+  formatted = lines
+    .map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return line;
+      const isHeader = /^[A-Z][A-Za-z() ]*:?$/.test(trimmed) && trimmed.length < 50;
+      return isHeader
+        ? line.replace(trimmed, `<span class="help-underline">${trimmed}</span>`)
+        : line;
+    })
+    .join('\n');
+
+  // Inline code (single quotes, ignore simple possessives)
+  formatted = formatted.replace(/'([^']+)'/g, (m, p) =>
+    /^[a-z]+s$/.test(p) && !/\s/.test(p) ? m : `<span class="help-code-inline">${p}</span>`
+  );
+
+  // Bold *word*
+  formatted = formatted.replace(/\*([A-Za-z][^*]*)\*/g, '<strong>$1</strong>');
+
+  // URLs and mailto links
+  formatted = formatted.replace(/(https?:\/\/[^\s&lt;]+)/g,
+    '<a href="$1" target="_blank" class="help-link">$1</a>');
+  formatted = formatted.replace(/(mailto:[^\s&lt;]+)/g,
+    '<a href="$1" class="help-link">$1</a>');
+
+  // First‑line package header
+  formatted = formatted.replace(
+    /^(\S+)(\s+)(package:\S+)(\s+)(R Documentation)/m,
+    '<div class="help-header-line">' +
+      '<span class="help-func-name">$1</span>$2' +
+      '<span class="help-pkg-name">$3</span>$4' +
+      '<span class="help-r-doc">$5</span></div>'
+  );
+
+  helpWrapper.innerHTML = `<pre class="help-pre">${formatted}</pre>`;
   switchTab('help');
 }
 
 function isHelpRequest(code) {
-  const helpMatch = code.match(/^\?(.+)$/) || code.match(/^help\(["']?([^"')]+)["']?\)$/);
-  return helpMatch ? helpMatch[1].trim() : null;
+  // Match ?topic, ?pkg::topic, ?topic(), help(topic), help("topic"), help(pkg::topic), etc.
+  const questionMatch = code.match(/^\?(.+)$/);
+  if (questionMatch) {
+    // Clean up: remove parentheses and whitespace
+    return questionMatch[1].trim().replace(/\(\)$/, '');
+  }
+  
+  const helpMatch = code.match(/^help\(["']?([^"')]+)["']?\)$/);
+  if (helpMatch) {
+    return helpMatch[1].trim();
+  }
+  
+  return null;
 }
 
 async function getHelp(topic) {
   if (!webR) return;
   
   try {
-    const result = await webR.evalRString(`
-      tryCatch({
-        h <- help("${topic}")
-        if (length(h) > 0) {
-          helpfile <- utils:::.getHelpFile(h)
-          txt <- capture.output(tools::Rd2txt(helpfile, out = stdout(), package = attr(h, "package")))
-          paste(txt, collapse = "\\n")
-        } else {
-          "No documentation found for '${topic}'"
-        }
-      }, error = function(e) {
-        paste("Error:", e$message)
-      })
-    `);
+    // Check if topic includes package (pkg::func)
+    const pkgMatch = topic.match(/^([^:]+)::(.+)$/);
     
+    let rCode;
+    if (pkgMatch) {
+      const pkg = pkgMatch[1];
+      const func = pkgMatch[2];
+      rCode = `
+        tryCatch({
+          h <- help("${func}", package = "${pkg}")
+          if (length(h) > 0) {
+            helpfile <- utils:::.getHelpFile(h)
+            txt <- capture.output(tools::Rd2txt(helpfile, out = stdout(), package = "${pkg}"))
+            paste(txt, collapse = "\\n")
+          } else {
+            "No documentation found for '${topic}'"
+          }
+        }, error = function(e) {
+          paste("Error:", e$message)
+        })
+      `;
+    } else {
+      rCode = `
+        tryCatch({
+          # Use help.search to find the topic, then get specific help
+          hs <- help.search("^${topic}$", fields = "name")
+          matches <- hs$matches
+          
+          if (nrow(matches) == 0) {
+            "No documentation found for '${topic}'"
+          } else {
+            # Get help from the first matching package
+            pkg <- matches$Package[1]
+            h <- help("${topic}", package = (pkg))
+            if (length(h) > 0) {
+              helpfile <- utils:::.getHelpFile(h)
+              txt <- capture.output(tools::Rd2txt(helpfile, out = stdout(), package = pkg))
+              paste(txt, collapse = "\\n")
+            } else {
+              "No documentation found for '${topic}'"
+            }
+          }
+        }, error = function(e) {
+          paste("Error:", e$message)
+        })
+      `;
+    }
+    
+    const result = await webR.evalRString(rCode);
     displayHelp(topic, result);
   } catch (error) {
     displayHelp(topic, `Error getting help: ${error.message}`);
@@ -1437,7 +1542,6 @@ async function initWebR() {
     }
 
     appendConsole('', 'system');
-    appendConsole('Ready!', 'system');
 
     setStatus('ready', 'Ready');
     
