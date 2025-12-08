@@ -1458,6 +1458,8 @@ function updatePlotDisplay() {
 
   if (plotPrev) plotPrev.disabled = currentPlotIndex === 0;
   if (plotNext) plotNext.disabled = currentPlotIndex === plotImages.length - 1;
+
+  switchTab('session');
 }
 
 async function addPlot(imageData) {
