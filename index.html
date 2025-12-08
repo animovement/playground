@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>animovement Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  
+  <!-- CodeMirror 5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/r/r.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #242424;
+      --bg-tertiary: #2d2d2d;
+      --text-primary: #e8e6e3;
+      --text-secondary: #a8a5a0;
+      --text-muted: #6b6965;
+      --accent: #7eb8da;
+      --accent-dim: #5a8ba8;
+      --success: #8fbc8f;
+      --error: #cd6155;
+      --border: #3a3a3a;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-serif: 'Source Serif 4', Georgia, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: var(--font-mono);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .container {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      gap: 0.75rem;
+    }
+
+    header {
+      flex-shrink: 0;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: 1.35rem;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background 0.3s ease;
+    }
+
+    .status-dot.loading {
+      background: var(--accent);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-dot.ready {
+      background: var(--success);
+    }
+
+    .status-dot.error {
+      background: var(--error);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .keybindings-hint {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .keybindings-hint kbd {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.1rem 0.3rem;
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+    }
+
+    /* Main layout */
+    .main-layout {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      gap: 0;
+    }
+
+    .left-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+      gap: 0;
+    }
+
+    .right-pane {
+      display: flex;
+      flex-direction: column;
+      min-width: 200px;
+      gap: 0;
+    }
+
+    /* Resize handles */
+    .resize-handle-h {
+      width: 6px;
+      cursor: col-resize;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .resize-handle-h:hover,
+    .resize-handle-h.dragging {
+      background: var(--border);
+    }
+
+    .resize-handle-h::after {
+      content: '';
+      width: 2px;
+      height: 40px;
+      background: var(--border);
+      border-radius: 1px;
+    }
+
+    .resize-handle-v {
+      height: 6px;
+      cursor: row-resize;
+      background: var(--bg-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .resize-handle-v:hover,
+    .resize-handle-v.dragging {
+      background: var(--border);
+    }
+
+    .resize-handle-v::after {
+      content: '';
+      height: 2px;
+      width: 40px;
+      background: var(--border);
+      border-radius: 1px;
+    }
+
+    /* Panels */
+    .panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      flex-shrink: 0;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-tertiary);
+    }
+
+    .panel-title {
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+    }
+
+    .panel-hint {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .panel-btn {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .panel-btn:hover:not(:disabled) {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .panel-btn.primary {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-color: var(--accent);
+    }
+
+    .panel-btn.primary:hover:not(:disabled) {
+      background: var(--accent-dim);
+      border-color: var(--accent-dim);
+    }
+
+    .panel-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Editor */
+    .editor-wrapper {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .CodeMirror {
+      height: 100%;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.6;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .CodeMirror-gutters {
+      background: var(--bg-tertiary);
+      border-right: 1px solid var(--border);
+    }
+
+    .CodeMirror-linenumber {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .CodeMirror-cursor {
+      border-left: 2px solid var(--accent);
+    }
+
+    .CodeMirror-selected {
+      background: rgba(126, 184, 218, 0.25) !important;
+    }
+
+    .CodeMirror-focused .CodeMirror-selected {
+      background: rgba(126, 184, 218, 0.3) !important;
+    }
+
+    .CodeMirror-activeline-background {
+      background: rgba(126, 184, 218, 0.05);
+    }
+
+    .CodeMirror-matchingbracket {
+      color: var(--accent) !important;
+      background: rgba(126, 184, 218, 0.3);
+    }
+
+    /* R syntax highlighting */
+    .cm-keyword { color: #c586c0; }
+    .cm-atom { color: #569cd6; }
+    .cm-number { color: #b5cea8; }
+    .cm-def { color: #dcdcaa; }
+    .cm-variable { color: #9cdcfe; }
+    .cm-variable-2 { color: #9cdcfe; }
+    .cm-variable-3 { color: #4ec9b0; }
+    .cm-property { color: #9cdcfe; }
+    .cm-operator { color: #d4d4d4; }
+    .cm-comment { color: #6a9955; font-style: italic; }
+    .cm-string { color: #ce9178; }
+    .cm-string-2 { color: #ce9178; }
+    .cm-builtin { color: #dcdcaa; }
+
+    /* Console */
+    .console-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .console-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      min-height: 0;
+    }
+
+    .console-line {
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-bottom: 0.15rem;
+    }
+
+    .console-line.stdout { color: var(--text-primary); }
+    .console-line.stderr { color: var(--error); }
+    .console-line.command { color: var(--accent); }
+    .console-line.system { color: var(--text-muted); font-style: italic; }
+
+    /* Console input with CodeMirror */
+    .console-input-wrapper {
+      flex-shrink: 0;
+      display: flex;
+      align-items: stretch;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .console-prompt {
+      padding: 0.4rem 0.5rem;
+      color: var(--accent);
+      font-size: 0.75rem;
+      user-select: none;
+      display: flex;
+      align-items: center;
+    }
+
+    .console-input-cm {
+      flex: 1;
+      min-height: 24px;
+    }
+
+    .console-input-cm .CodeMirror {
+      height: auto;
+      min-height: 24px;
+      max-height: 100px;
+      background: var(--bg-tertiary);
+      font-size: 0.75rem;
+      line-height: 1.5;
+    }
+
+    .console-input-cm .CodeMirror-scroll {
+      min-height: 24px;
+    }
+
+    .console-input-cm .CodeMirror-lines {
+      padding: 4px 0;
+    }
+
+    .console-input-cm .CodeMirror-gutters {
+      display: none;
+    }
+
+    .console-input-cm .CodeMirror-cursor {
+      border-left: 2px solid var(--accent);
+    }
+
+    /* Help pane */
+    .help-wrapper {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      min-height: 0;
+    }
+
+    .help-content {
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.5;
+    }
+
+    .help-empty {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .help-title {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.25rem;
+    }
+
+    .help-section {
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .help-code {
+      background: var(--bg-tertiary);
+      padding: 0.5rem;
+      border-radius: 4px;
+      margin: 0.25rem 0;
+      overflow-x: auto;
+    }
+
+    /* Plots carousel */
+    .plots-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .plot-carousel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      padding: 0.5rem;
+      position: relative;
+    }
+
+    .plot-container {
+      max-width: 100%;
+      max-height: 100%;
+      background: #ffffff;
+      border-radius: 4px;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .plot-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .plots-empty {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-style: italic;
+    }
+
+    .plot-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.5rem;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .plot-nav-btn {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .plot-nav-btn:hover:not(:disabled) {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .plot-nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .plot-counter {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      min-width: 60px;
+      text-align: center;
+    }
+
+    footer {
+      flex-shrink: 0;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    footer a {
+      color: var(--accent-dim);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      color: var(--accent);
+    }
+
+    /* Disable selection during resize */
+    body.resizing {
+      user-select: none;
+      cursor: col-resize;
+    }
+
+    body.resizing-v {
+      user-select: none;
+      cursor: row-resize;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1><span>animovement</span> playground</h1>
+        <div class="keybindings-hint">
+          <kbd>Cmd/Ctrl+Enter</kbd> Run selection or line &nbsp;
+          <kbd>Cmd/Ctrl+Shift+M</kbd> |&gt; &nbsp;
+          <kbd>Alt+-</kbd> &lt;-
+        </div>
+      </div>
+      <div class="status">
+        <span class="status-dot loading" id="statusDot"></span>
+        <span id="statusText">Initializing WebR...</span>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <div class="left-pane" id="leftPane" style="flex: 1 1 60%;">
+        <!-- Editor Panel -->
+        <div class="panel" id="editorPanel" style="flex: 1 1 60%;">
+          <div class="panel-header">
+            <span class="panel-title">Script</span>
+            <div class="panel-actions">
+              <button class="panel-btn primary" id="runBtn" disabled>Run</button>
+            </div>
+          </div>
+          <div class="editor-wrapper">
+            <textarea id="editor"># Write your R code here
+# Select code and press Cmd/Ctrl+Enter to run selection
+# Or run current line if nothing selected
+
+# Try: ?example_aniframe for help documentation
+
+</textarea>
+          </div>
+        </div>
+
+        <!-- Vertical resize handle -->
+        <div class="resize-handle-v" id="resizeV"></div>
+
+        <!-- Console Panel -->
+        <div class="panel" id="consolePanel" style="flex: 1 1 40%;">
+          <div class="panel-header">
+            <span class="panel-title">Console</span>
+            <div class="panel-actions">
+              <button class="panel-btn" id="clearConsoleBtn">Clear</button>
+            </div>
+          </div>
+          <div class="console-wrapper">
+            <div class="console-output" id="consoleOutput">
+              <div class="console-line system">Waiting for WebR to initialize...</div>
+            </div>
+            <div class="console-input-wrapper">
+              <span class="console-prompt">&gt;</span>
+              <div class="console-input-cm" id="consoleInputCm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horizontal resize handle -->
+      <div class="resize-handle-h" id="resizeH"></div>
+
+      <!-- Right pane with Help and Plots -->
+      <div class="right-pane" id="rightPane" style="flex: 1 1 40%;">
+        <!-- Help Panel -->
+        <div class="panel" id="helpPanel" style="flex: 1 1 50%;">
+          <div class="panel-header">
+            <span class="panel-title">Help</span>
+            <div class="panel-actions">
+              <span class="panel-hint" id="helpTopic"></span>
+              <button class="panel-btn" id="clearHelpBtn">Clear</button>
+            </div>
+          </div>
+          <div class="help-wrapper" id="helpContent">
+            <span class="help-empty">Run ?topic or help(topic) to view documentation</span>
+          </div>
+        </div>
+
+        <!-- Vertical resize handle for right pane -->
+        <div class="resize-handle-v" id="resizeVRight"></div>
+
+        <!-- Plots Panel -->
+        <div class="panel" id="plotsPanel" style="flex: 1 1 50%;">
+          <div class="panel-header">
+            <span class="panel-title">Plots</span>
+            <div class="panel-actions">
+              <button class="panel-btn" id="clearPlotsBtn">Clear</button>
+            </div>
+          </div>
+          <div class="plots-wrapper">
+            <div class="plot-carousel" id="plotCarousel">
+              <span class="plots-empty" id="plotsEmpty">Plots will appear here</span>
+              <div class="plot-container" id="plotContainer" style="display: none;">
+                <img id="plotImage" src="" alt="Plot">
+              </div>
+            </div>
+            <div class="plot-nav" id="plotNav" style="display: none;">
+              <button class="plot-nav-btn" id="plotPrev" disabled>&larr;</button>
+              <span class="plot-counter" id="plotCounter">1 / 1</span>
+              <button class="plot-nav-btn" id="plotNext" disabled>&rarr;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>Powered by <a href="https://docs.r-wasm.org/webr/" target="_blank">WebR</a></span>
+      <span>Packages from <a href="https://animovement.r-universe.dev" target="_blank">animovement.r-universe.dev</a></span>
+    </footer>
+  </div>
+
+  <script type="module">
+import { WebR } from 'https://webr.r-wasm.org/latest/webr.mjs';
+
+// ===== State =====
+
+let webR = null;
+let editor = null;
+let consoleInput = null;
+let isRunning = false;
+let commandHistory = [];
+let historyIndex = -1;
+let plotImages = [];
+let currentPlotIndex = 0;
+
+// ===== DOM Ready Check =====
+
+function getElement(id) {
+  const el = document.getElementById(id);
+  if (!el) console.error(`Element not found: ${id}`);
+  return el;
+}
+
+// ===== Editor Setup =====
+
+function rAutoIndent(cm) {
+  const cursor = cm.getCursor();
+  const line = cursor.line;
+  const prevLine = line > 0 ? cm.getLine(line - 1) : '';
+  const prevIndent = prevLine.match(/^\s*/)[0];
+  const trimmedPrev = prevLine.trimEnd();
+  
+  const shouldIndent = /(\|>|%>%|\+|\{|\(|\[|,)$/.test(trimmedPrev);
+  
+  let newIndent = prevIndent;
+  if (shouldIndent) {
+    newIndent = prevIndent + '  ';
+  }
+  
+  return newIndent;
+}
+
+function initEditor(initialCode) {
+  const editorTextarea = getElement('editor');
+  if (!editorTextarea) return;
+  
+  editor = CodeMirror.fromTextArea(editorTextarea, {
+    mode: 'r',
+    theme: 'default',
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    indentUnit: 2,
+    tabSize: 2,
+    indentWithTabs: false,
+    extraKeys: {
+      'Cmd-Enter': runFromEditor,
+      'Ctrl-Enter': runFromEditor,
+      'Shift-Cmd-M': (cm) => cm.replaceSelection(' |> '),
+      'Shift-Ctrl-M': (cm) => cm.replaceSelection(' |> '),
+      'Alt--': (cm) => cm.replaceSelection(' <- '),
+      'Tab': (cm) => {
+        if (cm.somethingSelected()) {
+          cm.indentSelection('add');
+        } else {
+          cm.replaceSelection('  ', 'end');
+        }
+      },
+      'Enter': (cm) => {
+        const indent = rAutoIndent(cm);
+        cm.replaceSelection('\n' + indent);
+      }
+    }
+  });
+
+  if (initialCode) {
+    editor.setValue(initialCode);
+  }
+}
+
+function initConsoleInput() {
+  const consoleInputCm = getElement('consoleInputCm');
+  if (!consoleInputCm) return;
+  
+  consoleInput = CodeMirror(consoleInputCm, {
+    mode: 'r',
+    theme: 'default',
+    lineNumbers: false,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    scrollbarStyle: 'null',
+    viewportMargin: Infinity,
+    extraKeys: {
+      'Enter': handleConsoleEnter,
+      'Up': handleConsoleUp,
+      'Down': handleConsoleDown,
+      'Shift-Cmd-M': (cm) => cm.replaceSelection(' |> '),
+      'Shift-Ctrl-M': (cm) => cm.replaceSelection(' |> '),
+      'Alt--': (cm) => cm.replaceSelection(' <- ')
+    }
+  });
+}
+
+function handleConsoleEnter() {
+  const code = consoleInput.getValue().trim();
+  if (code) {
+    commandHistory.unshift(code);
+    historyIndex = -1;
+    consoleInput.setValue('');
+    runCode(code);
+  }
+}
+
+function handleConsoleUp() {
+  if (historyIndex < commandHistory.length - 1) {
+    historyIndex++;
+    consoleInput.setValue(commandHistory[historyIndex]);
+    consoleInput.setCursor(consoleInput.lineCount(), 0);
+  }
+}
+
+function handleConsoleDown() {
+  if (historyIndex > 0) {
+    historyIndex--;
+    consoleInput.setValue(commandHistory[historyIndex]);
+    consoleInput.setCursor(consoleInput.lineCount(), 0);
+  } else if (historyIndex === 0) {
+    historyIndex = -1;
+    consoleInput.setValue('');
+  }
+}
+
+function runFromEditor() {
+  if (!editor) return;
+  
+  const selection = editor.getSelection();
+  let code;
+  
+  if (selection) {
+    code = selection;
+  } else {
+    const cursor = editor.getCursor();
+    code = editor.getLine(cursor.line);
+    if (cursor.line < editor.lineCount() - 1) {
+      editor.setCursor(cursor.line + 1, 0);
+    }
+  }
+  
+  if (code.trim()) {
+    runCode(code.trim());
+  }
+}
+
+// ===== Status =====
+
+function setStatus(state, text) {
+  const statusDot = getElement('statusDot');
+  const statusText = getElement('statusText');
+  if (statusDot) statusDot.className = 'status-dot ' + state;
+  if (statusText) statusText.textContent = text;
+}
+
+// ===== Console =====
+
+function appendConsole(text, type = 'stdout') {
+  const consoleOutput = getElement('consoleOutput');
+  if (!consoleOutput) return;
+  
+  const line = document.createElement('div');
+  line.className = 'console-line ' + type;
+  line.textContent = text;
+  consoleOutput.appendChild(line);
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+}
+
+function clearConsole() {
+  const consoleOutput = getElement('consoleOutput');
+  if (consoleOutput) consoleOutput.innerHTML = '';
+}
+
+// ===== Help =====
+
+function clearHelp() {
+  const helpContent = getElement('helpContent');
+  const helpTopic = getElement('helpTopic');
+  if (helpContent) helpContent.innerHTML = '<span class="help-empty">Run ?topic or help(topic) to view documentation</span>';
+  if (helpTopic) helpTopic.textContent = '';
+}
+
+function displayHelp(topic, text) {
+  const helpContent = getElement('helpContent');
+  const helpTopic = getElement('helpTopic');
+  
+  if (helpTopic) helpTopic.textContent = topic;
+  if (!helpContent) return;
+  
+  // Basic formatting for R help text
+  let formatted = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/^_([^_]+)_$/gm, '<div class="help-section">$1</div>')
+    .replace(/^([A-Z][A-Za-z ]+):$/gm, '<div class="help-section">$1:</div>');
+  
+  helpContent.innerHTML = `<div class="help-content">${formatted}</div>`;
+}
+
+function isHelpRequest(code) {
+  const helpMatch = code.match(/^\?(.+)$/) || code.match(/^help\(["']?([^"')]+)["']?\)$/);
+  return helpMatch ? helpMatch[1].trim() : null;
+}
+
+async function getHelp(topic) {
+  if (!webR) return;
+  
+  try {
+    const result = await webR.evalRString(`
+      tryCatch({
+        h <- help("${topic}")
+        if (length(h) > 0) {
+          helpfile <- utils:::.getHelpFile(h)
+          txt <- capture.output(tools::Rd2txt(helpfile, out = stdout(), package = attr(h, "package")))
+          paste(txt, collapse = "\\n")
+        } else {
+          "No documentation found for '${topic}'"
+        }
+      }, error = function(e) {
+        paste("Error:", e$message)
+      })
+    `);
+    
+    displayHelp(topic, result);
+  } catch (error) {
+    displayHelp(topic, `Error getting help: ${error.message}`);
+  }
+}
+
+// ===== Plots =====
+
+async function imageBitmapToDataUrl(bitmap) {
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+function updatePlotDisplay() {
+  const plotsEmpty = getElement('plotsEmpty');
+  const plotContainer = getElement('plotContainer');
+  const plotNav = getElement('plotNav');
+  const plotImage = getElement('plotImage');
+  const plotCounter = getElement('plotCounter');
+  const plotPrev = getElement('plotPrev');
+  const plotNext = getElement('plotNext');
+  
+  if (plotImages.length === 0) {
+    if (plotsEmpty) plotsEmpty.style.display = '';
+    if (plotContainer) plotContainer.style.display = 'none';
+    if (plotNav) plotNav.style.display = 'none';
+    return;
+  }
+
+  if (plotsEmpty) plotsEmpty.style.display = 'none';
+  if (plotContainer) plotContainer.style.display = '';
+  if (plotNav) plotNav.style.display = 'flex';
+
+  if (plotImage) plotImage.src = plotImages[currentPlotIndex];
+  if (plotCounter) plotCounter.textContent = `${currentPlotIndex + 1} / ${plotImages.length}`;
+
+  if (plotPrev) plotPrev.disabled = currentPlotIndex === 0;
+  if (plotNext) plotNext.disabled = currentPlotIndex === plotImages.length - 1;
+}
+
+async function addPlot(imageData) {
+  let dataUrl;
+  
+  if (imageData instanceof ImageBitmap) {
+    dataUrl = await imageBitmapToDataUrl(imageData);
+  } else if (typeof imageData === 'string') {
+    dataUrl = imageData;
+  } else if (imageData instanceof Blob) {
+    dataUrl = URL.createObjectURL(imageData);
+  }
+
+  plotImages.push(dataUrl);
+  currentPlotIndex = plotImages.length - 1;
+  updatePlotDisplay();
+}
+
+function clearPlots() {
+  plotImages = [];
+  currentPlotIndex = 0;
+  updatePlotDisplay();
+}
+
+// ===== WebR =====
+
+async function initWebR() {
+  try {
+    setStatus('loading', 'Initializing WebR...');
+    
+    webR = new WebR();
+    await webR.init();
+
+    setStatus('loading', 'Configuring repositories...');
+    
+    await webR.evalR(`
+      options(
+        repos = c(
+          animovement = "https://animovement.r-universe.dev",
+          CRAN = "https://repo.r-wasm.org"
+        ),
+        webr.show_menu = FALSE
+      )
+    `);
+
+    setStatus('loading', 'Installing animovement...');
+    clearConsole();
+    appendConsole('Installing animovement package...', 'system');
+
+    await webR.evalR(`
+      webr::install("animovement", repos = c(
+        "https://animovement.r-universe.dev",
+        "https://repo.r-wasm.org"
+      ))
+    `);
+
+    appendConsole('Loading animovement...', 'system');
+    await webR.evalR('library(animovement)');
+
+    appendConsole('Ready! animovement is loaded.', 'system');
+    appendConsole('', 'system');
+
+    setStatus('ready', 'Ready');
+    
+    const runBtn = getElement('runBtn');
+    if (runBtn) runBtn.disabled = false;
+    if (consoleInput) {
+      consoleInput.setOption('readOnly', false);
+      consoleInput.focus();
+    }
+
+  } catch (error) {
+    setStatus('error', 'Initialization failed');
+    appendConsole('Error: ' + error.message, 'stderr');
+    console.error('WebR init error:', error);
+  }
+}
+
+async function runCode(code) {
+  if (isRunning || !webR || !code) return;
+
+  // Check if this is a help request
+  const helpTopicMatch = isHelpRequest(code);
+  if (helpTopicMatch) {
+    appendConsole('> ' + code, 'command');
+    await getHelp(helpTopicMatch);
+    return;
+  }
+
+  isRunning = true;
+  const runBtn = getElement('runBtn');
+  if (runBtn) runBtn.disabled = true;
+  if (consoleInput) consoleInput.setOption('readOnly', true);
+  setStatus('loading', 'Running...');
+
+  const lines = code.split('\n');
+  lines.forEach((line, i) => {
+    appendConsole((i === 0 ? '> ' : '+ ') + line, 'command');
+  });
+
+  try {
+    const shelter = await new webR.Shelter();
+    
+    try {
+      const result = await shelter.captureR(code, {
+        withAutoprint: true,
+        captureStreams: true,
+        captureConditions: true,
+        captureGraphics: {
+          width: 800,
+          height: 600
+        }
+      });
+
+      for (const out of result.output) {
+        if (out.type === 'stdout' && out.data.trim()) {
+          appendConsole(out.data, 'stdout');
+        } else if (out.type === 'stderr' && out.data.trim()) {
+          appendConsole(out.data, 'stderr');
+        } else if (out.type === 'message') {
+          appendConsole(out.data, 'stderr');
+        }
+      }
+
+      if (result.images && result.images.length > 0) {
+        for (const img of result.images) {
+          await addPlot(img);
+        }
+      }
+
+    } finally {
+      await shelter.purge();
+    }
+
+  } catch (error) {
+    appendConsole('Error: ' + error.message, 'stderr');
+  }
+
+  isRunning = false;
+  if (runBtn) runBtn.disabled = false;
+  if (consoleInput) consoleInput.setOption('readOnly', false);
+  setStatus('ready', 'Ready');
+}
+
+// ===== Resize =====
+
+function initResize() {
+  const leftPane = getElement('leftPane');
+  const rightPane = getElement('rightPane');
+  const editorPanel = getElement('editorPanel');
+  const consolePanel = getElement('consolePanel');
+  const helpPanel = getElement('helpPanel');
+  const plotsPanel = getElement('plotsPanel');
+  const resizeH = getElement('resizeH');
+  const resizeV = getElement('resizeV');
+  const resizeVRight = getElement('resizeVRight');
+
+  // Horizontal resize (left/right panes)
+  if (resizeH && leftPane && rightPane) {
+    resizeH.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startLeftWidth = leftPane.getBoundingClientRect().width;
+      const startRightWidth = rightPane.getBoundingClientRect().width;
+      
+      document.body.classList.add('resizing');
+      resizeH.classList.add('dragging');
+      
+      const onMouseMove = (e) => {
+        const delta = e.clientX - startX;
+        const totalWidth = startLeftWidth + startRightWidth;
+        const newLeftWidth = Math.max(200, Math.min(totalWidth - 200, startLeftWidth + delta));
+        const newRightWidth = totalWidth - newLeftWidth;
+        
+        leftPane.style.flex = `0 0 ${newLeftWidth}px`;
+        rightPane.style.flex = `0 0 ${newRightWidth}px`;
+      };
+      
+      const onMouseUp = () => {
+        document.body.classList.remove('resizing');
+        resizeH.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        if (editor) editor.refresh();
+        if (consoleInput) consoleInput.refresh();
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  // Vertical resize (editor/console)
+  if (resizeV && editorPanel && consolePanel) {
+    resizeV.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startEditorHeight = editorPanel.getBoundingClientRect().height;
+      const startConsoleHeight = consolePanel.getBoundingClientRect().height;
+      
+      document.body.classList.add('resizing-v');
+      resizeV.classList.add('dragging');
+      
+      const onMouseMove = (e) => {
+        const delta = e.clientY - startY;
+        const totalHeight = startEditorHeight + startConsoleHeight;
+        const newEditorHeight = Math.max(100, Math.min(totalHeight - 100, startEditorHeight + delta));
+        const newConsoleHeight = totalHeight - newEditorHeight;
+        
+        editorPanel.style.flex = `0 0 ${newEditorHeight}px`;
+        consolePanel.style.flex = `0 0 ${newConsoleHeight}px`;
+      };
+      
+      const onMouseUp = () => {
+        document.body.classList.remove('resizing-v');
+        resizeV.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        if (editor) editor.refresh();
+        if (consoleInput) consoleInput.refresh();
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  // Vertical resize (help/plots)
+  if (resizeVRight && helpPanel && plotsPanel) {
+    resizeVRight.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startHelpHeight = helpPanel.getBoundingClientRect().height;
+      const startPlotsHeight = plotsPanel.getBoundingClientRect().height;
+      
+      document.body.classList.add('resizing-v');
+      resizeVRight.classList.add('dragging');
+      
+      const onMouseMove = (e) => {
+        const delta = e.clientY - startY;
+        const totalHeight = startHelpHeight + startPlotsHeight;
+        const newHelpHeight = Math.max(80, Math.min(totalHeight - 80, startHelpHeight + delta));
+        const newPlotsHeight = totalHeight - newHelpHeight;
+        
+        helpPanel.style.flex = `0 0 ${newHelpHeight}px`;
+        plotsPanel.style.flex = `0 0 ${newPlotsHeight}px`;
+      };
+      
+      const onMouseUp = () => {
+        document.body.classList.remove('resizing-v');
+        resizeVRight.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  }
+}
+
+// ===== Event Listeners =====
+
+function initEventListeners() {
+  const runBtn = getElement('runBtn');
+  const clearConsoleBtn = getElement('clearConsoleBtn');
+  const clearHelpBtn = getElement('clearHelpBtn');
+  const clearPlotsBtn = getElement('clearPlotsBtn');
+  const plotPrev = getElement('plotPrev');
+  const plotNext = getElement('plotNext');
+
+  if (runBtn) runBtn.addEventListener('click', runFromEditor);
+  if (clearConsoleBtn) clearConsoleBtn.addEventListener('click', clearConsole);
+  if (clearHelpBtn) clearHelpBtn.addEventListener('click', clearHelp);
+  if (clearPlotsBtn) clearPlotsBtn.addEventListener('click', clearPlots);
+
+  // Plot navigation
+  if (plotPrev) {
+    plotPrev.addEventListener('click', () => {
+      if (currentPlotIndex > 0) {
+        currentPlotIndex--;
+        updatePlotDisplay();
+      }
+    });
+  }
+
+  if (plotNext) {
+    plotNext.addEventListener('click', () => {
+      if (currentPlotIndex < plotImages.length - 1) {
+        currentPlotIndex++;
+        updatePlotDisplay();
+      }
+    });
+  }
+
+  // Keyboard navigation for plots
+  document.addEventListener('keydown', (e) => {
+    const inEditor = document.activeElement.closest('.CodeMirror');
+    if (inEditor) return;
+    
+    if (e.key === 'ArrowLeft' && plotImages.length > 0 && currentPlotIndex > 0) {
+      currentPlotIndex--;
+      updatePlotDisplay();
+    } else if (e.key === 'ArrowRight' && plotImages.length > 0 && currentPlotIndex < plotImages.length - 1) {
+      currentPlotIndex++;
+      updatePlotDisplay();
+    }
+  });
+}
+
+// ===== Initialization =====
+
+function loadCodeFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  return code ? decodeURIComponent(code) : '';
+}
+
+function init() {
+  console.log('Initializing playground...');
+  
+  try {
+    const initialCode = loadCodeFromUrl();
+    initEditor(initialCode);
+    initConsoleInput();
+    
+    if (consoleInput) {
+      consoleInput.setOption('readOnly', true);
+    }
+    
+    initResize();
+    initEventListeners();
+    initWebR();
+    
+    console.log('Initialization complete');
+  } catch (error) {
+    console.error('Initialization error:', error);
+    setStatus('error', 'Initialization failed');
+  }
+}
+
+// Start the app
+init();
+  </script>
+</body>
+</html>

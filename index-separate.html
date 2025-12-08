@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>animovement Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+  
+  <!-- CodeMirror 5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/r/r.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1><span>animovement</span> playground</h1>
+        <div class="keybindings-hint">
+          <kbd>Cmd/Ctrl+Enter</kbd> Run selection or line &nbsp;
+          <kbd>Cmd/Ctrl+Shift+M</kbd> |&gt; &nbsp;
+          <kbd>Alt+-</kbd> &lt;-
+        </div>
+      </div>
+      <div class="status">
+        <span class="status-dot loading" id="statusDot"></span>
+        <span id="statusText">Initializing WebR...</span>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <div class="left-pane" id="leftPane" style="flex: 1 1 60%;">
+        <!-- Editor Panel -->
+        <div class="panel" id="editorPanel" style="flex: 1 1 60%;">
+          <div class="panel-header">
+            <span class="panel-title">Script</span>
+            <div class="panel-actions">
+              <button class="panel-btn primary" id="runBtn" disabled>Run</button>
+            </div>
+          </div>
+          <div class="editor-wrapper">
+            <textarea id="editor"># Write your R code here
+# Select code and press Cmd/Ctrl+Enter to run selection
+# Or run current line if nothing selected
+
+# Try: ?example_aniframe for help documentation
+
+</textarea>
+          </div>
+        </div>
+
+        <!-- Vertical resize handle -->
+        <div class="resize-handle-v" id="resizeV"></div>
+
+        <!-- Console Panel -->
+        <div class="panel" id="consolePanel" style="flex: 1 1 40%;">
+          <div class="panel-header">
+            <span class="panel-title">Console</span>
+            <div class="panel-actions">
+              <button class="panel-btn" id="clearConsoleBtn">Clear</button>
+            </div>
+          </div>
+          <div class="console-wrapper">
+            <div class="console-output" id="consoleOutput">
+              <div class="console-line system">Waiting for WebR to initialize...</div>
+            </div>
+            <div class="console-input-wrapper">
+              <span class="console-prompt">&gt;</span>
+              <div class="console-input-cm" id="consoleInputCm"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horizontal resize handle -->
+      <div class="resize-handle-h" id="resizeH"></div>
+
+      <!-- Right pane with Help and Plots -->
+      <div class="right-pane" id="rightPane" style="flex: 1 1 40%;">
+        <!-- Help Panel -->
+        <div class="panel" id="helpPanel" style="flex: 1 1 50%;">
+          <div class="panel-header">
+            <span class="panel-title">Help</span>
+            <div class="panel-actions">
+              <span class="panel-hint" id="helpTopic"></span>
+              <button class="panel-btn" id="clearHelpBtn">Clear</button>
+            </div>
+          </div>
+          <div class="help-wrapper" id="helpContent">
+            <span class="help-empty">Run ?topic or help(topic) to view documentation</span>
+          </div>
+        </div>
+
+        <!-- Vertical resize handle for right pane -->
+        <div class="resize-handle-v" id="resizeVRight"></div>
+
+        <!-- Plots Panel -->
+        <div class="panel" id="plotsPanel" style="flex: 1 1 50%;">
+          <div class="panel-header">
+            <span class="panel-title">Plots</span>
+            <div class="panel-actions">
+              <button class="panel-btn" id="clearPlotsBtn">Clear</button>
+            </div>
+          </div>
+          <div class="plots-wrapper">
+            <div class="plot-carousel" id="plotCarousel">
+              <span class="plots-empty" id="plotsEmpty">Plots will appear here</span>
+              <div class="plot-container" id="plotContainer" style="display: none;">
+                <img id="plotImage" src="" alt="Plot">
+              </div>
+            </div>
+            <div class="plot-nav" id="plotNav" style="display: none;">
+              <button class="plot-nav-btn" id="plotPrev" disabled>&larr;</button>
+              <span class="plot-counter" id="plotCounter">1 / 1</span>
+              <button class="plot-nav-btn" id="plotNext" disabled>&rarr;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <span>Powered by <a href="https://docs.r-wasm.org/webr/" target="_blank">WebR</a></span>
+      <span>Packages from <a href="https://animovement.r-universe.dev" target="_blank">animovement.r-universe.dev</a></span>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
