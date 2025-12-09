@@ -2055,10 +2055,10 @@ async function initWebR() {
 
     // Auto-execute code from URL if present
     const initialCode = loadCodeFromUrl();
-    if (initialCode) {
+    if (initialCode && initialCode.trim()) {
       appendConsole('', 'system');
       appendConsole('Running code from URL...', 'system');
-      await runCode(initialCode);
+      await runCode(initialCode.trim());
     }
 
   } catch (error) {
