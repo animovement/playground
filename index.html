@@ -498,7 +498,6 @@
     .variables-wrapper {
       flex: 1;
       overflow-y: auto;
-      padding: 0.5rem 0.75rem;
       font-size: 0.75rem;
       min-height: 0;
     }
@@ -507,7 +506,160 @@
       color: var(--text-muted);
       font-size: 0.7rem;
       font-style: italic;
+      padding: 0.5rem 0.75rem;
     }
+
+    /* Variables tree styles */
+    .var-category {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .var-category:last-child {
+      border-bottom: none;
+    }
+
+    .var-category-header {
+      display: flex;
+      align-items: center;
+      padding: 0.35rem 0.5rem;
+      background: var(--bg-tertiary);
+      cursor: pointer;
+      user-select: none;
+      gap: 0.35rem;
+    }
+
+    .var-category-header:hover {
+      background: #353535;
+    }
+
+    .var-category-toggle {
+      width: 14px;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.6rem;
+      transition: transform 0.15s ease;
+    }
+
+    .var-category-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .var-category-title {
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .var-category-count {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .var-category-content {
+      display: block;
+    }
+
+    .var-category-content.collapsed {
+      display: none;
+    }
+
+    /* Variable row */
+    .var-row {
+      display: grid;
+      grid-template-columns: 20px 1fr auto;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      border-bottom: 1px solid var(--border);
+      min-height: 26px;
+    }
+
+    .var-row:last-child {
+      border-bottom: none;
+    }
+
+    .var-row:hover {
+      background: rgba(126, 184, 218, 0.05);
+    }
+
+    .var-row.child {
+      padding-left: 1.5rem;
+      background: var(--bg-primary);
+    }
+
+    .var-row.child:hover {
+      background: rgba(126, 184, 218, 0.08);
+    }
+
+    .var-toggle {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.55rem;
+      border-radius: 2px;
+      transition: all 0.15s ease;
+    }
+
+    .var-toggle:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .var-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .var-toggle.hidden {
+      visibility: hidden;
+    }
+
+    .var-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .var-name {
+      color: var(--text-primary);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .var-preview {
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .var-type {
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    /* Type-specific colors */
+    .var-type.numeric { color: #b5cea8; }
+    .var-type.character { color: #ce9178; }
+    .var-type.logical { color: #569cd6; }
+    .var-type.factor { color: #c586c0; }
+    .var-type.list { color: #dcdcaa; }
+    .var-type.dataframe { color: #4ec9b0; }
+    .var-type.function { color: #c586c0; }
 
     /* Help pane */
     .help-wrapper {
@@ -652,6 +804,29 @@
       cursor: not-allowed;
     }
 
+    .plot-save-btn {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-left: auto;
+    }
+
+    .plot-save-btn:hover:not(:disabled) {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .plot-save-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
     .plot-counter {
       font-size: 0.7rem;
       color: var(--text-muted);
@@ -773,6 +948,9 @@
               <div class="session-section" id="variablesSection" style="flex: 1 1 40%;">
                 <div class="session-section-header">
                   <span class="session-section-title">Variables</span>
+                  <div class="panel-actions">
+                    <button class="panel-btn" id="refreshVarsBtn" title="Refresh variables">Refresh</button>
+                  </div>
                 </div>
                 <div class="variables-wrapper" id="variablesContent">
                   <span class="variables-empty">No variables in environment</span>
@@ -787,6 +965,7 @@
                 <div class="session-section-header">
                   <span class="session-section-title">Plots</span>
                   <div class="panel-actions">
+                    <button class="plot-save-btn" id="plotSaveBtn">Save</button>
                     <button class="panel-btn" id="clearPlotsBtn">Clear</button>
                   </div>
                 </div>
@@ -843,6 +1022,7 @@ let historyIndex = -1;
 let plotImages = [];
 let currentPlotIndex = 0;
 let activeTab = 'session';
+let expandedVars = new Set(); // Track which variables are expanded
 
 // ===== DOM Ready Check =====
 
@@ -1422,6 +1602,303 @@ async function getHelp(topic) {
   }
 }
 
+// ===== Variables Pane =====
+
+async function getEnvironmentVariables() {
+  if (!webR) return { data: [], values: [] };
+  
+  try {
+    const rCode = `
+      local({
+        vars <- ls(envir = .GlobalEnv)
+        if (length(vars) == 0) {
+          return('{"data":[],"values":[]}')
+        }
+        
+        result <- list(data = list(), values = list())
+        
+        for (name in vars) {
+          obj <- get(name, envir = .GlobalEnv)
+          cls <- class(obj)[1]
+          
+          info <- list(
+            name = name,
+            class = cls
+          )
+          
+          # Determine category and gather info
+          if (is.data.frame(obj)) {
+            info$category <- "data"
+            info$dims <- paste0("[", nrow(obj), " x ", ncol(obj), "]")
+            info$preview <- paste0("<", cls, ">")
+            info$expandable <- TRUE
+            
+            # Get column info
+            cols <- lapply(names(obj), function(colname) {
+              col <- obj[[colname]]
+              col_cls <- class(col)[1]
+              col_len <- length(col)
+              
+              # Create preview of values
+              if (col_len == 0) {
+                prev <- ""
+              } else if (col_len <= 5) {
+                if (is.character(col) || is.factor(col)) {
+                  prev <- paste0('"', head(as.character(col), 5), '"', collapse = " ")
+                } else {
+                  prev <- paste(head(col, 5), collapse = " ")
+                }
+              } else {
+                if (is.character(col) || is.factor(col)) {
+                  prev <- paste0(paste0('"', head(as.character(col), 3), '"', collapse = " "), " ...")
+                } else {
+                  prev <- paste0(paste(head(col, 3), collapse = " "), " ...")
+                }
+              }
+              
+              list(
+                name = colname,
+                class = col_cls,
+                length = col_len,
+                preview = prev
+              )
+            })
+            info$children <- cols
+            result$data <- c(result$data, list(info))
+            
+          } else if (is.list(obj) && !is.data.frame(obj)) {
+            info$category <- "data"
+            info$dims <- paste0("[", length(obj), " elements]")
+            info$preview <- paste0("<", cls, ">")
+            info$expandable <- length(obj) > 0
+            
+            if (length(obj) > 0) {
+              elem_names <- names(obj)
+              if (is.null(elem_names)) elem_names <- paste0("[[", seq_along(obj), "]]")
+              
+              cols <- lapply(seq_along(obj), function(i) {
+                elem <- obj[[i]]
+                elem_cls <- class(elem)[1]
+                elem_name <- if (!is.null(names(obj)) && names(obj)[i] != "") names(obj)[i] else paste0("[[", i, "]]")
+                
+                if (is.atomic(elem) && length(elem) <= 5) {
+                  if (is.character(elem)) {
+                    prev <- paste0('"', elem, '"', collapse = " ")
+                  } else {
+                    prev <- paste(elem, collapse = " ")
+                  }
+                } else if (is.atomic(elem)) {
+                  prev <- paste0(paste(head(elem, 3), collapse = " "), " ...")
+                } else {
+                  prev <- paste0("<", elem_cls, ">")
+                }
+                
+                list(
+                  name = elem_name,
+                  class = elem_cls,
+                  length = if (is.atomic(elem)) length(elem) else NA,
+                  preview = prev
+                )
+              })
+              info$children <- cols
+            }
+            result$data <- c(result$data, list(info))
+            
+          } else if (is.function(obj)) {
+            info$category <- "values"
+            info$dims <- ""
+            info$preview <- "<function>"
+            info$expandable <- FALSE
+            result$values <- c(result$values, list(info))
+            
+          } else if (is.atomic(obj)) {
+            info$category <- "values"
+            len <- length(obj)
+            info$dims <- paste0(cls, " [", len, "]")
+            
+            if (len == 0) {
+              info$preview <- ""
+            } else if (len == 1) {
+              if (is.character(obj)) {
+                info$preview <- paste0('"', obj, '"')
+              } else {
+                info$preview <- as.character(obj)
+              }
+            } else if (len <= 5) {
+              if (is.character(obj)) {
+                info$preview <- paste0('"', obj, '"', collapse = " ")
+              } else {
+                info$preview <- paste(obj, collapse = " ")
+              }
+            } else {
+              if (is.character(obj)) {
+                info$preview <- paste0(paste0('"', head(obj, 3), '"', collapse = " "), " ...")
+              } else {
+                info$preview <- paste0(paste(head(obj, 3), collapse = " "), " ...")
+              }
+            }
+            info$expandable <- FALSE
+            result$values <- c(result$values, list(info))
+            
+          } else {
+            # Other objects (environments, S4, etc.)
+            info$category <- "values"
+            info$dims <- paste0("<", cls, ">")
+            info$preview <- ""
+            info$expandable <- FALSE
+            result$values <- c(result$values, list(info))
+          }
+        }
+        
+        jsonlite::toJSON(result, auto_unbox = TRUE)
+      })
+    `;
+    
+    const result = await webR.evalRString(rCode);
+    return JSON.parse(result);
+  } catch (error) {
+    console.error('Error getting variables:', error);
+    return { data: [], values: [] };
+  }
+}
+
+function getTypeClass(cls) {
+  const typeMap = {
+    'numeric': 'numeric',
+    'integer': 'numeric',
+    'double': 'numeric',
+    'character': 'character',
+    'logical': 'logical',
+    'factor': 'factor',
+    'list': 'list',
+    'data.frame': 'dataframe',
+    'tbl_df': 'dataframe',
+    'tibble': 'dataframe',
+    'function': 'function'
+  };
+  return typeMap[cls] || '';
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderVariableRow(varInfo, isChild = false) {
+  const isExpanded = expandedVars.has(varInfo.name);
+  const toggleClass = varInfo.expandable 
+    ? (isExpanded ? '' : 'collapsed') 
+    : 'hidden';
+  
+  let html = `
+    <div class="var-row ${isChild ? 'child' : ''}" data-var="${escapeHtml(varInfo.name)}">
+      <div class="var-toggle ${toggleClass}" data-var="${escapeHtml(varInfo.name)}">&#9660;</div>
+      <div class="var-info">
+        <span class="var-name">${escapeHtml(varInfo.name)}</span>
+        <span class="var-preview">${escapeHtml(varInfo.preview || '')}</span>
+      </div>
+      <span class="var-type ${getTypeClass(varInfo.class)}">${escapeHtml(varInfo.dims || varInfo.class)}</span>
+    </div>
+  `;
+  
+  // Render children if expanded
+  if (varInfo.expandable && isExpanded && varInfo.children) {
+    for (const child of varInfo.children) {
+      const childDims = child.length !== undefined && child.length !== null && !isNaN(child.length)
+        ? `${child.class} [${child.length}]`
+        : child.class;
+      html += `
+        <div class="var-row child">
+          <div class="var-toggle hidden">&#9660;</div>
+          <div class="var-info">
+            <span class="var-name">${escapeHtml(child.name)}</span>
+            <span class="var-preview">${escapeHtml(child.preview || '')}</span>
+          </div>
+          <span class="var-type ${getTypeClass(child.class)}">${escapeHtml(childDims)}</span>
+        </div>
+      `;
+    }
+  }
+  
+  return html;
+}
+
+function renderCategory(title, items, categoryId) {
+  if (items.length === 0) return '';
+  
+  const isCollapsed = false; // Categories start expanded
+  
+  let html = `
+    <div class="var-category" data-category="${categoryId}">
+      <div class="var-category-header">
+        <div class="var-category-toggle ${isCollapsed ? 'collapsed' : ''}">&#9660;</div>
+        <span class="var-category-title">${title}</span>
+        <span class="var-category-count">(${items.length})</span>
+      </div>
+      <div class="var-category-content ${isCollapsed ? 'collapsed' : ''}">
+  `;
+  
+  for (const item of items) {
+    html += renderVariableRow(item);
+  }
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+async function updateVariablesPane() {
+  const variablesContent = getElement('variablesContent');
+  if (!variablesContent) return;
+  
+  const vars = await getEnvironmentVariables();
+  
+  if (vars.data.length === 0 && vars.values.length === 0) {
+    variablesContent.innerHTML = '<span class="variables-empty">No variables in environment</span>';
+    return;
+  }
+  
+  let html = '';
+  html += renderCategory('Data', vars.data, 'data');
+  html += renderCategory('Values', vars.values, 'values');
+  
+  variablesContent.innerHTML = html;
+  
+  // Add click handlers for toggles
+  variablesContent.querySelectorAll('.var-toggle:not(.hidden)').forEach(toggle => {
+    toggle.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const varName = toggle.dataset.var;
+      
+      if (expandedVars.has(varName)) {
+        expandedVars.delete(varName);
+      } else {
+        expandedVars.add(varName);
+      }
+      
+      await updateVariablesPane();
+    });
+  });
+  
+  // Add click handlers for category headers
+  variablesContent.querySelectorAll('.var-category-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const category = header.closest('.var-category');
+      const toggle = header.querySelector('.var-category-toggle');
+      const content = category.querySelector('.var-category-content');
+      
+      toggle.classList.toggle('collapsed');
+      content.classList.toggle('collapsed');
+    });
+  });
+}
+
 // ===== Plots =====
 
 async function imageBitmapToDataUrl(bitmap) {
@@ -1484,6 +1961,18 @@ function clearPlots() {
   updatePlotDisplay();
 }
 
+function savePlot() {
+  if (plotImages.length === 0) return;
+  
+  const dataUrl = plotImages[currentPlotIndex];
+  const link = document.createElement('a');
+  link.href = dataUrl;
+  link.download = `plot-${currentPlotIndex + 1}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // ===== WebR =====
 
 async function initWebR() {
@@ -1516,9 +2005,14 @@ async function initWebR() {
       ))
     `);
 
+    // Install jsonlite for variables pane
+    await webR.evalR(`
+      webr::install("jsonlite", repos = "https://repo.r-wasm.org")
+    `);
+
     appendConsole('', 'system');
     
-// Run library(animovement) and show it in the console
+    // Run library(animovement) and show it in the console
     appendConsole('> library(animovement)', 'command');
     
     const shelter = await new webR.Shelter();
@@ -1555,6 +2049,9 @@ async function initWebR() {
       consoleInput.setOption('readOnly', false);
       consoleInput.focus();
     }
+
+    // Initial variables update
+    await updateVariablesPane();
 
   } catch (error) {
     setStatus('error', 'Initialization failed');
@@ -1620,6 +2117,9 @@ async function runCode(code) {
     } finally {
       await shelter.purge();
     }
+
+    // Update variables pane after code execution
+    await updateVariablesPane();
 
   } catch (error) {
     appendConsole('Error: ' + error.message, 'stderr');
@@ -1756,8 +2256,10 @@ function initEventListeners() {
   const clearConsoleBtn = getElement('clearConsoleBtn');
   const clearHelpBtn = getElement('clearHelpBtn');
   const clearPlotsBtn = getElement('clearPlotsBtn');
+  const refreshVarsBtn = getElement('refreshVarsBtn');
   const plotPrev = getElement('plotPrev');
   const plotNext = getElement('plotNext');
+  const plotSaveBtn = getElement('plotSaveBtn');
   const tabSession = getElement('tabSession');
   const tabHelp = getElement('tabHelp');
 
@@ -1768,6 +2270,8 @@ function initEventListeners() {
   if (clearConsoleBtn) clearConsoleBtn.addEventListener('click', clearConsole);
   if (clearHelpBtn) clearHelpBtn.addEventListener('click', clearHelp);
   if (clearPlotsBtn) clearPlotsBtn.addEventListener('click', clearPlots);
+  if (plotSaveBtn) plotSaveBtn.addEventListener('click', savePlot);
+  if (refreshVarsBtn) refreshVarsBtn.addEventListener('click', updateVariablesPane);
 
   // Tab switching
   if (tabSession) tabSession.addEventListener('click', () => switchTab('session'));
