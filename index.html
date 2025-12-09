@@ -2055,10 +2055,10 @@ async function initWebR() {
 
     // Auto-execute code from URL if present
     const initialCode = loadCodeFromUrl();
-    if (initialCode && initialCode.trim()) {
+    if (initialCode) {
       appendConsole('', 'system');
       appendConsole('Running code from URL...', 'system');
-      await runCode(initialCode.trim());
+      await runCode(initialCode);
     }
 
   } catch (error) {
@@ -2087,7 +2087,11 @@ async function runCode(code) {
   if (consoleInput) consoleInput.setOption('readOnly', true);
   setStatus('loading', 'Running...');
 
-  const lines = code.split('\n');
+  const lines = code.split('\n').filter((line, i, arr) => {
+    // Remove trailing empty lines
+    if (i === arr.length - 1 && line.trim() === '') return false;
+    return true;
+  });
   lines.forEach((line, i) => {
     appendConsole((i === 0 ? '> ' : '+ ') + line, 'command');
   });
