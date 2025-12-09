@@ -2053,6 +2053,14 @@ async function initWebR() {
     // Initial variables update
     await updateVariablesPane();
 
+    // Auto-execute code from URL if present
+    const initialCode = loadCodeFromUrl();
+    if (initialCode) {
+      appendConsole('', 'system');
+      appendConsole('Running code from URL...', 'system');
+      await runCode(initialCode);
+    }
+
   } catch (error) {
     setStatus('error', 'Initialization failed');
     appendConsole('Error: ' + error.message, 'stderr');
